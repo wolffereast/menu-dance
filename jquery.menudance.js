@@ -8,17 +8,20 @@
 
 ;(function ( $ ) {
 	$.fn.menu_dance = function(options) {
-		var menu_dance, settings = $.extend(
-		{},{
-			changers : {},
-		}, options);
+		var menu_dance,
+				settings = $.extend(
+					{},{
+						changers : {},
+					}, options
+				),
+				selector = this;
 		
-		this.each(function(){
+		selector.each(function(){
 			//create the new javascript object here
 			menu_dance = $(this).data('Menu_Dance', new Menu_Dance(this, settings.changers));
 		});
 		//return the selector, cause, ya know, jQuery
-		return this;
+		return selector;
 	}
 
 	function Menu_Dance(target, changers){
@@ -61,10 +64,14 @@
 	}//end of resize_handler function prototype declaration
 	
 	Menu_Dance.prototype.promise_bind = function(event){
-		$(event.data.selector).promise().done(function(){
-			////console.log('running the bound promise')
-			event.data.Menu_Dance.update_element()
-		});
+		//use the promise bound class to keep more than one promise from firing after each event
+		if (!$(event.data.selector).hasClass('menuDancePromiseBound')){
+			$(event.data.selector).addClass('menuDancePromiseBound');
+			$(event.data.selector).promise().done(function(){
+				$(event.data.selector).removeClass('menuDancePromiseBound');
+				event.data.Menu_Dance.update_element()
+			});
+		}
 	}//end of promise_bind function prototype declaration
 	
 	Menu_Dance.prototype.scroll_bind = function(event){
@@ -135,26 +142,35 @@
 				winYPos = win.scrollTop(),
 				winHeight = win.height(),
 				docHeight = $('body').height();
-
+		////if (typeof console.log == "function")console.log(target)
+		////if (typeof console.log == "function")console.log('targetHeight: ' + targetHeight)
+		////if (typeof console.log == "function")console.log('targetTop: ' + targetTop)
+		////if (typeof console.log == "function")console.log('winYPos: ' + winYPos)
+		////if (typeof console.log == "function")console.log('winHeight: ' + winHeight)
+		////if (typeof console.log == "function")console.log('docHeight: ' + docHeight)
+		
 		if(targetHeight > winHeight){
 			target.addClass('menu_dance_scrollable');
 			
 			if (winYPos){
 				//need to check position here
 				if (target.css('position') == 'relative'){
+					////if (typeof console.log == "function")console.log('relative test true')
 					//close enough to the bottom to run over, push it back up
 					if (docHeight < (winYPos + targetHeight) && targetTop + targetHeight >= docHeight){
+						////if (typeof console.log == "function")console.log('push up test true')
 						target.animate({top : (docHeight - targetHeight)+'px'}, 300);
 					}
 					//need to catch when you close something near the bottom of the window, this moves the bottom back down
 					else if (targetTop + targetHeight < winYPos + winHeight){
+						////if (typeof console.log == "function")console.log('push down test true')
 						target.animate({top : (winYPos + winHeight - targetHeight)+'px'}, 300, 'swing', function(){
 							target.css({top: ($(window).height() - targetHeight) + 'px', position: 'fixed'});
 						});
 					}
 				}
 				else{
-					////console.log('in the pos = fixed update target call')
+					////if (typeof console.log == "function")console.log('relative test false')
 					//too close to the bottom, move the element up please
 					if (docHeight < (winYPos + targetHeight)){
 						target.animate({top : (docHeight - targetHeight - winYPos)+'px'}, 300, 'swing', function(){
@@ -179,12 +195,12 @@
 		}
 		else{
 			target.removeClass('menu_dance_scrollable')
-			if (target.css('display') == 'relative'){
+			if (target.css('position') == 'relative'){
 				target.animate({top : winYPos + 'px'}, 300, 'swing', function(){
-					target.css({display : 'fixed', top : '0px'});
+					target.css({position : 'fixed', top : '0px'});
 				});
 			}
-			else target.css({display : 'fixed', top : '0px'});
+			else target.css({position : 'fixed', top : '0px'});
 		}
 	}//end update element prototype declaration
 
